@@ -1,59 +1,100 @@
 package com.wamser.orgs.ui.activity
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import br.com.alura.orgs.extensions.formataParaMoedaBrasileira
 import com.wamser.orgs.R
+import com.wamser.orgs.database.AppDatabase
 import com.wamser.orgs.databinding.ActivityDetalhesProdutoBinding
 import com.wamser.orgs.extensions.tentaCarregarImagem
+import com.wamser.orgs.model.Produto
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.*
 
-//const val TAG = "Estado da Activity"
-
 class DetalhesProdutoActivity : AppCompatActivity(R.layout.activity_detalhes_produto) {
 
+
+    private var idProduto: Long = 0L
+    private var produto: Produto? = null
     private val binding by lazy {
         ActivityDetalhesProdutoBinding.inflate(layoutInflater)
+    }
+
+
+    private val produtoDao by lazy {
+        AppDatabase.instancia(this).produtoDao()
     }
 
     private var url: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.i(TAG, "onCreate: ")
-        this.supportActionBar!!.hide()
-
-        val extras = getIntent().getExtras()
-        if (null != extras) {
-            val nome = extras.getString("nome")
-            val descricao = extras.getString("descricao")
-            val valor = extras.getString("valor")?.toBigDecimal()//extras.getDouble("valor")
-            val valorEmMoeda: String = formataParaMoedaBrasileira(valor!!)
-            val urlImagem = extras.getString("imagem")
-
-            Log.i(TAG, "onCreate: $nome")
-            binding.activityDetalhesProdutoNome.setText(nome)
-            Log.i(TAG, "onCreate: $descricao")
-            binding.activityDetalhesProdutoDescricao.setText(descricao)
-            Log.i(TAG, "onCreate: $valorEmMoeda")
-            binding.activityDetalhesProdutoValor.setText(valorEmMoeda)
-            Log.i(TAG, "onCreate: $urlImagem")
-            binding.activityDetalhesProdutoImagem.tentaCarregarImagem(urlImagem)
-
-        }
         setContentView(binding.root)
-    }
+        tentaCarregarProduto()
 
-    override fun onStart() {
-        super.onStart()
-        Log.i(TAG, "onStart: ")
     }
 
     override fun onResume() {
         super.onResume()
         Log.i(TAG, "onResume: ")
+        buscaProduto()
+    }
+
+    private fun buscaProduto() {
+        produto = produtoDao.buscaPorId(idProduto)
+        produto?.let {
+            preencheCampos(it)
+        } ?: finish()
+    }
+
+    private fun tentaCarregarProduto() {
+        //intent.getParcelableExtra<Produto>("CHAVE_PRODUTO_ID")?.let { produtoCarregado ->
+        idProduto=intent.getLongExtra(CHAVE_PRODUTO_ID,0L)
+    }
+
+    private fun preencheCampos(produtoCarregado: Produto) {
+        with(binding) {
+            activityDetalhesProdutoImagem.tentaCarregarImagem(produtoCarregado.imagem)
+            activityDetalhesProdutoNome.text = produtoCarregado.nome
+            activityDetalhesProdutoDescricao.text = produtoCarregado.descricao
+            activityDetalhesProdutoValor.text =
+                produtoCarregado.valor.formataParaMoedaBrasileira()
+        }
+    }
+
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_detalhes_produto, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
+
+        when (item.itemId) {
+            R.id.menu_detalhes_produto_editar -> {
+                Intent(this, FormularioProdutoActivity::class.java).apply {
+                    putExtra(CHAVE_PRODUTO_ID,idProduto)
+                    startActivity(this)
+                }
+            }
+            R.id.menu_detalhes_produto_excluir -> {
+                produto?.let { produtoDao.remove(it) }
+                finish()
+            }
+        }
+
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.i(TAG, "onStart: ")
     }
 
     override fun onPause() {
