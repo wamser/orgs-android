@@ -2,41 +2,42 @@ package com.wamser.orgs.database.dao
 
 import androidx.room.*
 import com.wamser.orgs.model.Produto
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProdutoDao {
 
     @Query("SELECT * FROM Produto ORDER BY nome ASC")
-    fun buscaTodosNomeAsc(): List<Produto>
+    fun buscaTodosNomeAsc(): Flow<List<Produto>>
 
     @Query("SELECT * FROM Produto ORDER BY nome DESC")
-    fun buscaTodosNomeDesc(): List<Produto>
+     fun buscaTodosNomeDesc(): Flow<List<Produto>>
 
     @Query("SELECT * FROM Produto ORDER BY descricao ASC")
-    fun buscaTodosDescricaoAsc(): List<Produto>
+     fun buscaTodosDescricaoAsc(): Flow<List<Produto>>
 
     @Query("SELECT * FROM Produto ORDER BY descricao DESC")
-    fun buscaTodosDescricaoDesc(): List<Produto>
+     fun buscaTodosDescricaoDesc(): Flow<List<Produto>>
 
     @Query("SELECT * FROM Produto ORDER BY valor ASC")
-    fun buscaTodosValorAsc(): List<Produto>
+     fun buscaTodosValorAsc(): Flow<List<Produto>>
 
     @Query("SELECT * FROM Produto ORDER BY valor DESC")
-    fun buscaTodosValorDesc(): List<Produto>
+     fun buscaTodosValorDesc(): Flow<List<Produto>>
 
     @Query("SELECT * FROM Produto")
-    fun buscaTodos(): List<Produto>
+    fun buscaTodos(): Flow<List<Produto>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun salva(vararg produto: Produto)
+    suspend fun salva(vararg produto: Produto)
 
     @Delete
-    fun remove(vararg produto: Produto)
+    suspend fun remove(vararg produto: Produto)
 
     /*@Update
-    fun altera(vararg produto: Produto)*/
+    suspend fun altera(vararg produto: Produto)*/
 
     @Query("SELECT * FROM Produto WHERE id = :id")
-    fun buscaPorId(id: Long) : Produto?
+    fun buscaPorId(id: Long) : Flow<Produto?>
 
 }

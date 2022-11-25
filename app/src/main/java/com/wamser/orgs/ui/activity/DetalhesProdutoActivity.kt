@@ -6,12 +6,18 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import br.com.alura.orgs.extensions.formataParaMoedaBrasileira
 import com.wamser.orgs.R
 import com.wamser.orgs.database.AppDatabase
 import com.wamser.orgs.databinding.ActivityDetalhesProdutoBinding
 import com.wamser.orgs.extensions.tentaCarregarImagem
 import com.wamser.orgs.model.Produto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.*
@@ -25,12 +31,13 @@ class DetalhesProdutoActivity : AppCompatActivity(R.layout.activity_detalhes_pro
         ActivityDetalhesProdutoBinding.inflate(layoutInflater)
     }
 
-
     private val produtoDao by lazy {
         AppDatabase.instancia(this).produtoDao()
     }
 
     private var url: String? = null
+
+    //private val scope = CoroutineScope(IO)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,10 +53,16 @@ class DetalhesProdutoActivity : AppCompatActivity(R.layout.activity_detalhes_pro
     }
 
     private fun buscaProduto() {
-        produto = produtoDao.buscaPorId(idProduto)
-        produto?.let {
-            preencheCampos(it)
-        } ?: finish()
+        lifecycleScope.launch {
+            produtoDao.buscaPorId(idProduto).collect{produto->
+            withContext(Main) {
+                produto?.let {
+                    preencheCampos(it)
+                } ?: finish()
+            }
+            }
+        }
+
     }
 
     private fun tentaCarregarProduto() {
@@ -84,8 +97,11 @@ class DetalhesProdutoActivity : AppCompatActivity(R.layout.activity_detalhes_pro
                 }
             }
             R.id.menu_detalhes_produto_excluir -> {
-                produto?.let { produtoDao.remove(it) }
-                finish()
+                lifecycleScope.launch {
+                    produto?.let { produtoDao.remove(it) }
+                    finish()
+                }
+
             }
         }
 
