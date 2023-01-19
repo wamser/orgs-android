@@ -23,4 +23,17 @@
     <item
         android:id="@+id/menu_detalhes_ordenacao_sem_ordem"
         android:title="Sem ordenação" />
+    <item
+        android:id="@+id/menu_lista_produtos_perfil_usuario"
+        android:icon="@drawable/ic_action_perfil_usuario"
+        android:title="Perfil" />
+    <item
+        android:id="@+id/menu_lista_produtos_produto_sem_usuario"
+        android:title="Produto s/ Usuário" />
+    <item
+        android:id="@+id/menu_lista_produtos_sair_app"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:icon="@drawable/ic_action_sair_app"
+        android:title="Sair" />
 </menu>

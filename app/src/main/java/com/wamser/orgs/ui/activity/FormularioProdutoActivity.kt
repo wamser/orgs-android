@@ -2,23 +2,26 @@ package com.wamser.orgs.ui.activity
 
 import android.os.Bundle
 import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
+import android.view.View.GONE
+import android.view.View.VISIBLE
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import androidx.lifecycle.lifecycleScope
+import br.com.alura.orgs.model.Usuario
 import com.wamser.orgs.R
 import com.wamser.orgs.database.AppDatabase
 import com.wamser.orgs.databinding.ActivityFormularioProdutoBinding
 import com.wamser.orgs.extensions.tentaCarregarImagem
 import com.wamser.orgs.model.Produto
 import com.wamser.orgs.ui.dialog.FormularioImagemDialog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 
 const val TAG = "Estado da Activity"
 
-class FormularioProdutoActivity : AppCompatActivity(R.layout.activity_formulario_produto) {
+class FormularioProdutoActivity : UsuarioBaseActivity() {
 
     private val binding by lazy {
         ActivityFormularioProdutoBinding.inflate(layoutInflater)
@@ -30,12 +33,10 @@ class FormularioProdutoActivity : AppCompatActivity(R.layout.activity_formulario
         val db = AppDatabase.instancia(this)
         db.produtoDao()
     }
-    //private val scope = CoroutineScope(Dispatchers.IO)
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.i(TAG, "onCreate: ")
+        Log.i(TAG, "FormularioProdutoActivity - onCreate: ")
         title = "Cadastrar produto"
         configuraBotaoSalvar()
         setContentView(binding.root)
@@ -51,36 +52,71 @@ class FormularioProdutoActivity : AppCompatActivity(R.layout.activity_formulario
 
     override fun onResume() {
         super.onResume()
-        Log.i(TAG, "onResume: ")
+        Log.i(TAG, "FormularioProdutoActivity - onResume: ")
         tentaBuscarProduto()
-    }
-
-    private fun buscaProduto() {
-        lifecycleScope.launch {
-            produtoDao.buscaPorId(idProduto).collect{produto->
-                withContext(Dispatchers.Main) {
-                    produto?.let {
-                        preencheCampos(it)
-                    } ?: finish()
-                }
-            }
-        }
-
     }
 
     private fun tentaBuscarProduto() {
         lifecycleScope.launch {
-            produtoDao.buscaPorId(idProduto).collect{produto->
-                withContext(Dispatchers.Main) {
-                    produto?.let {
-                        title = "Alterar produto"
-                        preencheCampos(it)
-                    } ?: finish()
+            produtoDao.buscaPorId(idProduto).collect {
+                it?.let { produtoEncontrado ->
+                    title = "Alterar produto"
+                    val campoUsuarioId = binding.activityFormularioProdutoUsuarioId
+                    campoUsuarioId.visibility = if (produtoEncontrado.salvoSemUsuario()) {
+                            configuraCampoUsuario()
+                            VISIBLE
+                        } else{
+                            GONE
+                        }
+                    preencheCampos(produtoEncontrado)
                 }
             }
         }
-
     }
+
+
+    private fun configuraCampoUsuario() {
+        lifecycleScope.launch {
+            usuarios()
+                .map { usuarios -> usuarios.map { it.id } }
+                .collect { usuarios ->
+                    configuraAutoCompleteTextView(usuarios)
+                }
+        }
+    }
+
+    private fun configuraAutoCompleteTextView(
+        usuarios: List<String>
+    ) {
+        val campoUsuarioId = binding.activityFormularioProdutoUsuarioId
+        /*val adapter = ArrayAdapter(
+            this@FormularioProdutoActivity,
+            android.R.layout.simple_dropdown_item_1line,
+            usuarios
+        )*/
+        val adapter = ArrayAdapter<String>(this@FormularioProdutoActivity, R.layout.dropdown_item, usuarios)
+        (campoUsuarioId.editText as? AutoCompleteTextView)?.setAdapter(adapter)
+
+        //campoUsuarioId.
+        /*campoUsuarioId.setOnFocusChangeListener { _, focado ->
+            if (!focado) {
+                usuarioExistenteValido(usuarios)
+            }
+        }*/
+    }
+
+    private fun usuarioExistenteValido(
+        usuarios: List<String>
+    ): Boolean {
+        val campoUsuarioId = binding.activityFormularioProdutoUsuarioId
+        val usuarioId = campoUsuarioId.getEditText() //text.toString()
+        /*if (!usuarios.contains(usuarioId)) {
+            campoUsuarioId.error = "usuário inexistente!"
+            return false
+        }*/
+        return true
+    }
+
 
     private fun tentaCarregarProduto() {
         idProduto = intent.getLongExtra(CHAVE_PRODUTO_ID, 0L)
@@ -94,22 +130,50 @@ class FormularioProdutoActivity : AppCompatActivity(R.layout.activity_formulario
         binding.activityFormularioProdutoValor.setText(produto.valor.toPlainString())
     }
 
-    private fun configuraBotaoSalvar() {
-        val botaoSalvar = binding.activityFormularioProdutoBotaoSalvar
-
-
-
-        botaoSalvar.setOnClickListener {
-
-            val produtoNovo = criaProduto()
-
-            lifecycleScope.launch {
-                produtoDao.salva(produtoNovo)
+    private suspend fun tentaSalvarProduto() {
+        usuario.value?.let { usuario ->
+            try {
+                val usuarioId = defineUsuarioId(usuario)
+                val produto = criaProduto()
+                produtoDao.salva(produto)
                 finish()
+            } catch (e: RuntimeException) {
+                Log.e("FormularioProduto", "configuraBotaoSalvar: ", e)
             }
         }
     }
 
+    private fun configuraBotaoSalvar() {
+        val botaoSalvar = binding.activityFormularioProdutoBotaoSalvar
+        botaoSalvar.setOnClickListener {
+
+            lifecycleScope.launch {
+                usuario.value?.let {
+                    tentaSalvarProduto()
+                }
+            }
+
+        }
+    }
+
+    private suspend fun defineUsuarioId(usuario: Usuario): String = produtoDao
+        .buscaPorId(idProduto)
+        .first()?.let { produtoEncontrado ->
+            if (produtoEncontrado.usuarioId.isNullOrBlank()) {
+                val usuarios = usuarios()
+                    .map { usuariosEncontrados ->
+                        usuariosEncontrados.map { it.id }
+                    }.first()
+                if (usuarioExistenteValido(usuarios)) {
+                    val campoUsuarioId =
+                        binding.activityFormularioProdutoUsuarioId
+                    return campoUsuarioId.toString()//text.toString()
+                } else {
+                    throw RuntimeException("Tentou salvar produto com usuário inexistente")
+                }
+            }
+            null
+        } ?: usuario.id
 
     private fun criaProduto(): Produto {
 
@@ -130,40 +194,20 @@ class FormularioProdutoActivity : AppCompatActivity(R.layout.activity_formulario
         } else {
             BigDecimal(valorEmTexto)
         }
+        val campoUsuarioId = binding.activityFormularioProdutoUsuarioId
+
+        val usuarioId = campoUsuarioId.getEditText()?.text
+
+
 
         return Produto(
             id = idProduto,
             nome = nome,
             descricao = descricao,
             valor = valor,
-            imagem = url
+            imagem = url,
+            usuarioId = usuarioId?.toString()
         )
 
-    }
-
-    override fun onStart() {
-        super.onStart()
-        Log.i(TAG, "onStart: ")
-    }
-
-
-    override fun onPause() {
-        super.onPause()
-        Log.i(TAG, "onPause: ")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        Log.i(TAG, "onStop: ")
-    }
-
-    override fun onRestart() {
-        super.onRestart()
-        Log.i(TAG, "onRestart: ")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.i(TAG, "onDestroy: ")
     }
 }

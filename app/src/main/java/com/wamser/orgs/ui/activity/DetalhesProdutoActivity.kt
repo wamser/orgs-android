@@ -13,8 +13,6 @@ import com.wamser.orgs.database.AppDatabase
 import com.wamser.orgs.databinding.ActivityDetalhesProdutoBinding
 import com.wamser.orgs.extensions.tentaCarregarImagem
 import com.wamser.orgs.model.Produto
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,8 +34,6 @@ class DetalhesProdutoActivity : AppCompatActivity(R.layout.activity_detalhes_pro
     }
 
     private var url: String? = null
-
-    //private val scope = CoroutineScope(IO)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,7 +62,6 @@ class DetalhesProdutoActivity : AppCompatActivity(R.layout.activity_detalhes_pro
     }
 
     private fun tentaCarregarProduto() {
-        //intent.getParcelableExtra<Produto>("CHAVE_PRODUTO_ID")?.let { produtoCarregado ->
         idProduto=intent.getLongExtra(CHAVE_PRODUTO_ID,0L)
     }
 

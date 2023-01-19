@@ -7,26 +7,29 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ProdutoDao {
 
-    @Query("SELECT * FROM Produto ORDER BY nome ASC")
-    fun buscaTodosNomeAsc(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId ORDER BY nome ASC")
+    fun buscaTodosNomeAsc(usuarioId:String): Flow<List<Produto>>
 
-    @Query("SELECT * FROM Produto ORDER BY nome DESC")
-     fun buscaTodosNomeDesc(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId ORDER BY nome DESC")
+     fun buscaTodosNomeDesc(usuarioId:String): Flow<List<Produto>>
 
-    @Query("SELECT * FROM Produto ORDER BY descricao ASC")
-     fun buscaTodosDescricaoAsc(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId ORDER BY descricao ASC")
+     fun buscaTodosDescricaoAsc(usuarioId:String): Flow<List<Produto>>
 
-    @Query("SELECT * FROM Produto ORDER BY descricao DESC")
-     fun buscaTodosDescricaoDesc(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId ORDER BY descricao DESC")
+     fun buscaTodosDescricaoDesc(usuarioId:String): Flow<List<Produto>>
 
-    @Query("SELECT * FROM Produto ORDER BY valor ASC")
-     fun buscaTodosValorAsc(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId ORDER BY valor ASC")
+     fun buscaTodosValorAsc(usuarioId:String): Flow<List<Produto>>
 
-    @Query("SELECT * FROM Produto ORDER BY valor DESC")
-     fun buscaTodosValorDesc(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId ORDER BY valor DESC")
+     fun buscaTodosValorDesc(usuarioId:String): Flow<List<Produto>>
 
-    @Query("SELECT * FROM Produto")
-    fun buscaTodos(): Flow<List<Produto>>
+    @Query("SELECT * FROM Produto WHERE usuarioId = :usuarioId")
+    fun buscaTodos(usuarioId:String): Flow<List<Produto>>
+
+    @Query("SELECT * FROM Produto WHERE usuarioId = '' OR usuarioId IS NULL ")
+    fun buscaTodosSemUsuario(): Flow<List<Produto>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun salva(vararg produto: Produto)

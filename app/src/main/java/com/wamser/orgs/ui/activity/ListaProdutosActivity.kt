@@ -5,18 +5,16 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import br.com.alura.orgs.extensions.vaiPara
 import com.wamser.orgs.R
 import com.wamser.orgs.database.AppDatabase
-import com.wamser.orgs.database.dao.ProdutoDao
 import com.wamser.orgs.databinding.ActivityListaProdutosBinding
-import com.wamser.orgs.model.Produto
 import com.wamser.orgs.ui.recyclerview.adapter.ListaProdutosAdapter
-import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 
-class ListaProdutosActivity : AppCompatActivity(R.layout.activity_lista_produtos) {
+class ListaProdutosActivity : UsuarioBaseActivity() {
 
     private val adapter = ListaProdutosAdapter(context = this)
     private val binding by lazy {
@@ -36,17 +34,17 @@ class ListaProdutosActivity : AppCompatActivity(R.layout.activity_lista_produtos
 
         lifecycleScope.launch {
 
-            produtoDao.buscaTodos().collect{produtos->
-                adapter.atualiza(produtos)
+            val launch = launch {
+                usuario.filterNotNull().collect {usuario->
+                    buscaProdutosUsuario(usuario.id)
+                }
+
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-
-
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -61,65 +59,109 @@ class ListaProdutosActivity : AppCompatActivity(R.layout.activity_lista_produtos
 
             R.id.menu_detalhes_ordenacao_nome_asc -> {
                 lifecycleScope.launch {
-
-                    produtoDao.buscaTodosNomeAsc().collect{produtos->
-                        adapter.atualiza(produtos)
+                    usuario.filterNotNull().collect { usuario ->
+                        produtoDao.buscaTodosNomeAsc(usuario.id).collect { produtos ->
+                            adapter.atualiza(produtos)
+                        }
                     }
                 }
             }
             R.id.menu_detalhes_ordenacao_nome_desc -> {
                 lifecycleScope.launch {
-
-                    produtoDao.buscaTodosNomeDesc().collect{produtos->
-                        adapter.atualiza(produtos)
+                    usuario.filterNotNull().collect { usuario ->
+                        produtoDao.buscaTodosNomeDesc(usuario.id).collect { produtos ->
+                            adapter.atualiza(produtos)
+                        }
+                    }
                 }
-            }
             }
             R.id.menu_detalhes_ordenacao_descricao_asc -> {
                 lifecycleScope.launch {
-
-                    produtoDao.buscaTodosDescricaoAsc().collect{produtos->
-                        adapter.atualiza(produtos)
+                    usuario.filterNotNull().collect { usuario ->
+                        produtoDao.buscaTodosDescricaoAsc(usuario.id).collect { produtos ->
+                            adapter.atualiza(produtos)
+                        }
                     }
                 }
             }
             R.id.menu_detalhes_ordenacao_descricao_desc -> {
                 lifecycleScope.launch {
-
-                    produtoDao.buscaTodosDescricaoDesc().collect{produtos->
-                        adapter.atualiza(produtos)
+                    usuario.filterNotNull().collect { usuario ->
+                        produtoDao.buscaTodosDescricaoDesc(usuario.id).collect { produtos ->
+                            adapter.atualiza(produtos)
+                        }
                     }
                 }
             }
             R.id.menu_detalhes_ordenacao_valor_asc -> {
                 lifecycleScope.launch {
-
-                    produtoDao.buscaTodosValorAsc().collect{produtos->
+                    usuario.filterNotNull().collect { usuario ->
+                    produtoDao.buscaTodosValorAsc(usuario.id).collect { produtos ->
                         adapter.atualiza(produtos)
+                    }
                     }
                 }
             }
             R.id.menu_detalhes_ordenacao_valor_desc -> {
                 lifecycleScope.launch {
-
-                    produtoDao.buscaTodosValorDesc().collect{produtos->
-                        adapter.atualiza(produtos)
+                    usuario.filterNotNull().collect { usuario ->
+                        produtoDao.buscaTodosValorDesc(usuario.id).collect { produtos ->
+                            adapter.atualiza(produtos)
+                        }
                     }
                 }
             }
             R.id.menu_detalhes_ordenacao_sem_ordem -> {
                 lifecycleScope.launch {
+                    usuario.filterNotNull().collect { usuario ->
+                        produtoDao.buscaTodos(usuario.id).collect { produtos ->
+                            adapter.atualiza(produtos)
 
-                    produtoDao.buscaTodos().collect{produtos->
-                       adapter.atualiza(produtos)
-
+                        }
                     }
                 }
+            }
+            R.id.menu_lista_produtos_perfil_usuario -> {
+                Log.i("ListaProdutosActivity", "menu_lista_produtos_perfil_usuario")
+
+                vaiPara(DetalhesUsuarioActivity::class.java)
+
+            }
+
+
+        R.id.menu_lista_produtos_produto_sem_usuario -> {
+            Log.i("ListaProdutosActivity", "menu_lista_produtos_produto_sem_usuario")
+
+
+            //vaiPara(ListaProdutosSemUsuarioActivity::class.java)
+
+            lifecycleScope.launch {
+
+                    produtoDao.buscaTodosSemUsuario().collect { produtos ->
+                        adapter.atualiza(produtos)
+                    }
+
             }
 
         }
 
+            R.id.menu_lista_produtos_sair_app -> {
+                lifecycleScope.launch {
+                    deslogaUsuario()
+                }
+            }
+        }
+
+
+
         return super.onOptionsItemSelected(item)
+    }
+
+
+    private suspend fun buscaProdutosUsuario(usuarioId: String) {
+        produtoDao.buscaTodos(usuarioId).collect { produtos ->
+            adapter.atualiza(produtos)
+        }
     }
 
     private fun configuraFab() {
@@ -139,10 +181,9 @@ class ListaProdutosActivity : AppCompatActivity(R.layout.activity_lista_produtos
 
 
             val intent = Intent(
-                this,
-                DetalhesProdutoActivity::class.java
+                this, DetalhesProdutoActivity::class.java
             ).apply {
-                // envio do produto por meio do extra
+
                 putExtra(CHAVE_PRODUTO_ID, it.id)
             }
             startActivity(intent)

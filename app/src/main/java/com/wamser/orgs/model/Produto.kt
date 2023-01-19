@@ -13,5 +13,11 @@ class Produto(
     val nome: String?,
     val descricao: String?,
     val valor: BigDecimal,
-    val imagem:String? = null
-) : Parcelable
+    val imagem:String? = null,
+    val usuarioId: String? = null
+) : Parcelable {
+
+    fun salvoSemUsuario() = usuarioId.isNullOrBlank() &&
+            id > 0L
+
+}

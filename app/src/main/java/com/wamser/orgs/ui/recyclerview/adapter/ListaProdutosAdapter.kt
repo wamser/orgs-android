@@ -2,14 +2,12 @@ package com.wamser.orgs.ui.recyclerview.adapter
 import android.content.Context
 import android.util.Log
 import android.view.*
-import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
 import com.wamser.orgs.R
 import com.wamser.orgs.databinding.ProdutoItemBinding
 import com.wamser.orgs.extensions.tentaCarregarImagem
 import com.wamser.orgs.model.Produto
-import com.wamser.orgs.ui.activity.TAG
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.*
@@ -35,7 +33,7 @@ class ListaProdutosAdapter(
             }
 
             itemView.setOnLongClickListener {
-                Log.i("setOnLongClickListener", "clicando e segurando no item")
+
                 showPopup(itemView)
 
 
@@ -96,9 +94,6 @@ class ListaProdutosAdapter(
         }
 
     }
-
-
-
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(context)
